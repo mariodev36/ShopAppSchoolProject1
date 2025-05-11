@@ -3,63 +3,75 @@ package com.example.shop.Service;
 import com.example.shop.DTO.DtoCutomer.CustomerRequestDto;
 import com.example.shop.DTO.DtoCutomer.CustomerResponseDto;
 import com.example.shop.Entity.Customer;
-import com.example.shop.Repository.CustomerRepo;
-import com.example.shop.Service.exceptions.AlreadyExistCustomerException;
+import com.example.shop.Repository.CustomerRepository;
+import com.example.shop.Service.exceptions.AlreadyExistException;
 import com.example.shop.Service.exceptions.NotFoundException;
+import com.example.shop.Service.util.Convertor;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @AllArgsConstructor
 public class CustomerService {
- private CustomerRepo repository;
-private Convertor convertor;
 
-public CustomerResponseDto createCustomer(CustomerRequestDto request) {
-    if (isExistCustomer(request.getCustomerEmail())){
-        throw new AlreadyExistCustomerException("User with this  email  " + request.getCustomerEmail() + " exist");
-    }
+ private final CustomerRepository repository;
+private final Convertor converter;
+ private final ConfirmationService confirmationCodeService;
 
-Customer newCustomer = convertor.customerFromDto(request);
-Customer savedCustomer = repository.save(newCustomer);
-CustomerResponseDto responseDto = convertor.dtoFromCustomer(savedCustomer);
-return responseDto;
-}
+ @Transactional
+ public CustomerResponseDto registration(CustomerRequestDto request){
+  if (repository.existsByCustomerEmail(request.getEmail())) {
+   throw new AlreadyExistException("User with email: " + request.getEmail() + " is already exist");
+  }
 
-    private boolean isExistCustomer(String email) {
-        Optional<Customer> existCustomer = repository.findByCustomerEmail(email);
-        return existCustomer.isPresent();
+  Customer newUser = converter.fromDto(request);
+  repository.save(newUser);
 
-    }
+  confirmationCodeService.confirmationCodeHandle(newUser);
 
-    public List<CustomerResponseDto> findAllCustomers(){
-        return repository.findAll().stream()
-                .map(customer -> convertor.dtoFromCustomer(customer))
-                .toList();
-    }
+  return converter.toDto(newUser);
 
-    public CustomerResponseDto findCustomerByEmail(String email){
+ }
 
-        Optional<Customer> customerOptional = repository.findByCustomerEmail(email);
+ public List<CustomerResponseDto> findAllCustomers(){
+  List<Customer> customers= repository.findAll();
+  List<CustomerResponseDto> responses = converter.fromCustomers(customers);
 
-        if (customerOptional.isPresent()) {
-            CustomerResponseDto response = convertor.dtoFromCustomer(customerOptional.get());
-            return response;
-        } else {
-            throw new NotFoundException("User with email " + email + " not found");
-        }
+  return responses;
+ }
 
-    }
+ public CustomerResponseDto findUserById(Integer id){
+  Customer customer = repository.findById(id)
+          .orElseThrow(() -> new NotFoundException("User with ID = " + id + " not found"));
 
-    public Optional<Customer> findCustomerByEmailForCreatedPurchase(String email){
+  return converter.toDto(customer);
+ }
 
-        return repository.findByCustomerEmail(email);
+ public List<Customer> findFullDetailUsers(){
+  return repository.findAll();
+ }
+
+ public CustomerResponseDto findUserByEmail(String email){
+  Customer customer = repository.findByCustomerEmail(email)
+          .orElseThrow(() -> new NotFoundException("User with email: " + email + " not found"));
+
+  return converter.toDto(customer);
+ }
 
 
-    }
+ @Transactional
+ public CustomerResponseDto confirmationEmail(String code){
+
+  Customer customer = confirmationCodeService.confirmUserByCode(code);
+
+
+  repository.save(customer);
+
+  return converter.toDto(customer)  ;
+ }
 
 
 }

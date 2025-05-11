@@ -1,16 +1,17 @@
 package com.example.shop.DTO.DtoCutomer;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class CustomerRequestDto {
 
-    private String customerName;
-    private String customerEmail;
+    private String email;
     private String password;
 
 }

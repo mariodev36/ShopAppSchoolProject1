@@ -1,10 +1,8 @@
-package com.example.shop.Controller;
+package com.example.shop.Controller.CustomerController;
 
 import com.example.shop.DTO.DtoCutomer.CustomerRequestDto;
 import com.example.shop.DTO.DtoCutomer.CustomerResponseDto;
-import com.example.shop.Entity.Customer;
 import com.example.shop.Service.CustomerService;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
